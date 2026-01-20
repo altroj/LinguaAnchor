@@ -5,37 +5,46 @@ app = Flask(__name__)
 
 # Configuration
 UPLOAD_FOLDER = 'uploads'
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+LIBRARY_FOLDER = os.path.join('library', 'german')
 
-# Create a sample German text file if it doesn't exist
-SAMPLE_TEXT_PATH = os.path.join(UPLOAD_FOLDER, 'sample.md')
-if not os.path.exists(SAMPLE_TEXT_PATH):
-    with open(SAMPLE_TEXT_PATH, 'w', encoding='utf-8') as f:
-        f.write("Das ist ein einfacher deutscher Text. Wir lernen Sprachen.")
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+os.makedirs(LIBRARY_FOLDER, exist_ok=True)
+
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['LIBRARY_FOLDER'] = LIBRARY_FOLDER
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
-    content = ""
+    # 1. List available German texts in the library
+    library_files = [f for f in os.listdir(app.config['LIBRARY_FOLDER']) if f.endswith('.md')]
     
-    # 1. Handle File Uploads
+    text_content = ""
+    source_type = "none" # 'library', 'upload', or 'none'
+
+    # 2. Handle File Uploads (User's own text)
     if request.method == 'POST':
         if 'file' in request.files:
             file = request.files['file']
             if file.filename != '':
                 filepath = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
                 file.save(filepath)
-                # Read the uploaded file immediately
                 with open(filepath, 'r', encoding='utf-8') as f:
-                    content = f.read()
-    
-    # 2. If no upload, load the sample text or the last uploaded text
-    if not content:
-        # For this demo, we always default to sample.md if nothing is POSTed
-        with open(SAMPLE_TEXT_PATH, 'r', encoding='utf-8') as f:
-            content = f.read()
+                    text_content = f.read()
+                source_type = 'upload'
 
-    return render_template('index.html', text_content=content)
+    # 3. Handle Library Selection (User clicked a text from the list)
+    selected_file = request.args.get('text')
+    if selected_file:
+        filepath = os.path.join(app.config['LIBRARY_FOLDER'], selected_file)
+        if os.path.exists(filepath):
+            with open(filepath, 'r', encoding='utf-8') as f:
+                text_content = f.read()
+            source_type = 'library'
+
+    return render_template('index.html', 
+                           text_content=text_content, 
+                           library_files=library_files,
+                           source_type=source_type)
 
 if __name__ == '__main__':
     app.run(debug=True)

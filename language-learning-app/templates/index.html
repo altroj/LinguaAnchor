@@ -3,141 +3,234 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>First Letter Memorization</title>
+    <title>Fluent Reader</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
-        body { font-family: sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background-color: #f4f4f9; }
-        
-        /* Header and Upload Styles */
-        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .upload-box { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        
-        /* The Learning Area */
-        #text-container { 
-            font-size: 24px; 
-            line-height: 1.6; 
-            background: white; 
-            padding: 30px; 
-            border-radius: 8px; 
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            min-height: 200px;
+        :root {
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --primary: #3b82f6; /* Modern Blue */
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
         }
 
-        /* Word States */
-        .word { display: inline-block; margin-right: 8px; padding: 2px 5px; border-radius: 4px; transition: all 0.2s; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg-color); color: var(--text-main); margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; }
+
+        /* Navigation Bar */
+        nav { background: var(--card-bg); border-bottom: 1px solid var(--border); padding: 15px 40px; display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-weight: 600; font-size: 1.2rem; color: var(--text-main); text-decoration: none; }
+        .nav-links a { margin-left: 20px; text-decoration: none; color: var(--text-muted); font-size: 0.9rem; transition: 0.2s; }
+        .nav-links a:hover { color: var(--primary); }
+
+        /* Main Layout */
+        main { flex: 1; padding: 40px; max-width: 900px; margin: 0 auto; width: 100%; box-sizing: border-box; }
+
+        /* SELECTION SCREEN (Dashboard) */
+        .dashboard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
+        .section-title { font-size: 1.5rem; margin-bottom: 20px; font-weight: 600; }
+
+        .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 25px; transition: transform 0.2s, box-shadow 0.2s; }
+        .card:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
+
+        /* File List */
+        .file-list { list-style: none; padding: 0; margin: 0; }
+        .file-list li { margin-bottom: 10px; }
+        .file-link { display: block; padding: 10px; background: #f1f5f9; border-radius: 8px; text-decoration: none; color: var(--text-main); font-weight: 500; }
+        .file-link:hover { background: #e2e8f0; }
+
+        /* Upload Form */
+        .upload-area { text-align: center; border: 2px dashed var(--border); padding: 30px; border-radius: 8px; cursor: pointer; }
+        .upload-btn { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 0.9rem; margin-top: 10px; }
+
+        /* READING MODE */
+        #reading-interface { display: none; } /* Hidden by default */
         
-        /* Hidden state (User hasn't typed it yet) */
-        .word.hidden { color: transparent; background-color: #e0e0e0; border-bottom: 2px solid #ccc; user-select: none; }
+        #text-container {
+            font-size: 26px;
+            line-height: 1.8;
+            color: var(--text-main);
+        }
+
+        /* Word Styling */
+        .word { display: inline-block; margin-right: 6px; padding: 2px 4px; border-radius: 4px; transition: all 0.2s ease; }
         
-        /* Active state (The word the user needs to type now) */
-        .word.active { color: transparent; background-color: #b3d4fc; border-bottom: 3px solid #007bff; position: relative; }
-        /* Show the first letter hint for the active word */
+        .word.hidden { 
+            color: transparent; 
+            background-color: #e2e8f0; 
+            border-bottom: 2px solid #cbd5e1; 
+            user-select: none; 
+        }
+
+        .word.active { 
+            background-color: #dbeafe; /* Light blue bg */
+            border-bottom: 3px solid var(--primary);
+            color: transparent;
+            position: relative;
+        }
+        
+        /* The Hint */
         .word.active::after {
-            content: attr(data-first-letter);
-            color: #0056b3;
+            content: attr(data-hint); /* Show the calculated hint */
+            color: var(--primary);
             position: absolute;
             left: 5px;
             top: 0;
+            font-weight: 600;
         }
 
-        /* Completed state */
-        .word.completed { color: #333; background-color: transparent; border-bottom: none; }
+        .word.completed { color: var(--text-main); background: transparent; border: none; }
+        
+        .back-btn { margin-bottom: 20px; display: inline-block; text-decoration: none; color: var(--text-muted); font-size: 0.9rem; }
+        .back-btn:hover { color: var(--text-main); }
 
-        /* Instruction text */
-        .instructions { color: #666; margin-bottom: 10px; font-style: italic; }
     </style>
 </head>
 <body>
 
-    <header>
-        <h1>Language Memorizer</h1>
-    </header>
+    <nav>
+        <a href="/" class="logo">Memorize.io</a>
+        <div class="nav-links">
+            <a href="/">Dashboard</a>
+        </div>
+    </nav>
 
-    <div class="upload-box">
-        <p>Upload your own text (.md):</p>
-        <form method="POST" enctype="multipart/form-data">
-            <input type="file" name="file" accept=".md">
-            <button type="submit">Load Text</button>
-        </form>
-    </div>
+    <main>
+        {% if not text_content %}
+        <div class="dashboard-grid">
+            
+            <div>
+                <h2 class="section-title">🇩🇪 German Library</h2>
+                <div class="card">
+                    {% if library_files %}
+                        <ul class="file-list">
+                            {% for file in library_files %}
+                            <li>
+                                <a href="/?text={{ file }}" class="file-link">{{ file }}</a>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p style="color:var(--text-muted)">No files found in <code>library/german/</code></p>
+                    {% endif %}
+                </div>
+            </div>
 
-    <hr>
+            <div>
+                <h2 class="section-title">📂 Upload Text</h2>
+                <div class="card">
+                    <form method="POST" enctype="multipart/form-data" class="upload-area">
+                        <p style="margin-bottom: 10px; color: var(--text-muted);">Select a .md file</p>
+                        <input type="file" name="file" accept=".md" required>
+                        <br>
+                        <button type="submit" class="upload-btn">Start Memorizing</button>
+                    </form>
+                </div>
+            </div>
 
-    <p class="instructions">Type the <strong>first letter</strong> of the highlighted word to reveal it.</p>
-    
-    <div id="text-container"></div>
+        </div>
+        {% endif %}
 
-    <div id="raw-text" style="display:none;">{{ text_content }}</div>
+        {% if text_content %}
+        <div id="reading-interface" style="display: block;">
+            <a href="/" class="back-btn">← Back to Dashboard</a>
+            <div id="text-container"></div>
+        </div>
+        
+        <div id="raw-text" style="display:none;">{{ text_content }}</div>
+        {% endif %}
+
+    </main>
 
     <script>
-        const rawText = document.getElementById('raw-text').innerText;
-        const container = document.getElementById('text-container');
+        // Only run script if we are in reading mode
+        const rawTextDiv = document.getElementById('raw-text');
         
-        // 1. Prepare the text
-        // We split by spaces to get words. 
-        // Note: Ideally, we would strip newlines, but let's keep it simple.
-        const words = rawText.trim().split(/\s+/);
-        
-        let currentWordIndex = 0;
-
-        // 2. Render the words into the container
-        words.forEach((word, index) => {
-            const span = document.createElement('span');
-            span.classList.add('word');
+        if (rawTextDiv) {
+            const rawText = rawTextDiv.innerText;
+            const container = document.getElementById('text-container');
             
-            // Default state: First word is active, others are hidden
-            if (index === 0) {
-                span.classList.add('active');
-            } else {
-                span.classList.add('hidden');
+            // 1. Split text but keep punctuation slightly attached for spacing
+            // Simple split by whitespace for now
+            const words = rawText.trim().split(/\s+/);
+            
+            let currentWordIndex = 0;
+            const wordElements = []; // Store references to spans
+
+            // Helper: Find first alphanumeric char (German-friendly)
+            function getFirstValidChar(str) {
+                // Matches letters (including German umlauts) and numbers
+                const match = str.match(/[a-zA-Z0-9äöüÄÖÜß]/);
+                return match ? match[0] : null;
             }
 
-            span.innerText = word;
-            span.id = `word-${index}`;
-            
-            // Store the first letter cleanly (remove punctuation for the check if you want, 
-            // but for now, we check the actual first character including quotes/etc)
-            span.dataset.firstLetter = word.charAt(0);
-            
-            container.appendChild(span);
-        });
-
-        // 3. The Typing Logic
-        document.addEventListener('keydown', (e) => {
-            // Ignore non-character keys (shift, ctrl, etc)
-            if (e.key.length > 1) return;
-
-            // Get the current active word
-            const currentWordSpan = document.getElementById(`word-${currentWordIndex}`);
-            if (!currentWordSpan) return; // End of text
-
-            const targetWord = words[currentWordIndex];
-            const targetLetter = targetWord.charAt(0).toLowerCase();
-            const typedLetter = e.key.toLowerCase();
-
-            // Check if the typed letter matches the first letter of the word
-            if (typedLetter === targetLetter) {
-                // Correct!
+            // 2. Render Words
+            words.forEach((wordText, index) => {
+                const span = document.createElement('span');
+                span.classList.add('word', 'hidden');
+                span.innerText = wordText;
                 
-                // 1. Mark current word as completed (reveal it)
-                currentWordSpan.classList.remove('active');
-                currentWordSpan.classList.remove('hidden');
-                currentWordSpan.classList.add('completed');
-
-                // 2. Move to next word
-                currentWordIndex++;
-                const nextWordSpan = document.getElementById(`word-${currentWordIndex}`);
+                // Logic to determine the target key
+                const validChar = getFirstValidChar(wordText);
                 
-                if (nextWordSpan) {
-                    nextWordSpan.classList.remove('hidden');
-                    nextWordSpan.classList.add('active');
+                if (validChar) {
+                    // It's a real word
+                    span.dataset.targetKey = validChar.toLowerCase();
+                    span.dataset.hint = validChar; // What gets shown in the hint
+                    span.dataset.isPunctuation = "false";
                 } else {
-                    alert("Text completed! Great job.");
+                    // It's just punctuation (like "..." or "-")
+                    span.dataset.isPunctuation = "true";
+                    span.dataset.hint = "";
                 }
-            } else {
-                // Optional: Add a shake animation or red flash here for incorrect input
-                console.log("Incorrect letter.");
+
+                container.appendChild(span);
+                wordElements.push(span);
+            });
+
+            // 3. Activate the first word
+            activateWord(0);
+
+            function activateWord(index) {
+                if (index >= wordElements.length) {
+                    alert("Finished! Great job.");
+                    return;
+                }
+
+                const span = wordElements[index];
+                
+                // If it's purely punctuation, reveal it automatically and skip to next
+                if (span.dataset.isPunctuation === "true") {
+                    span.classList.remove('hidden');
+                    span.classList.add('completed');
+                    currentWordIndex++;
+                    activateWord(currentWordIndex); // Recursion to skip multiple punctuation marks
+                } else {
+                    span.classList.remove('hidden');
+                    span.classList.add('active');
+                }
             }
-        });
+
+            // 4. Typing Listener
+            document.addEventListener('keydown', (e) => {
+                if (currentWordIndex >= wordElements.length) return;
+                
+                const currentSpan = wordElements[currentWordIndex];
+                
+                // Ignore keys if we aren't waiting for a letter
+                if (currentSpan.dataset.isPunctuation === "true") return;
+
+                // Check key
+                if (e.key.toLowerCase() === currentSpan.dataset.targetKey) {
+                    // Correct!
+                    currentSpan.classList.remove('active');
+                    currentSpan.classList.add('completed');
+                    
+                    currentWordIndex++;
+                    activateWord(currentWordIndex);
+                }
+            });
+        }
     </script>
 </body>
 </html>
